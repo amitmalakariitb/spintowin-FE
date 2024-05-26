@@ -1,149 +1,95 @@
-import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
-import './FormPage.css';
+import { Wheel } from 'react-custom-roulette';
+import './SpinPage.css';
 
-function FormPage() {
-    const location = useLocation();
-    const navigate = useNavigate();
-    const params = new URLSearchParams(location.search);
-    const code = params.get('code');
-    const hash = params.get('hash');
-    const [name, setName] = useState('');
-    const [mobileNumber, setMobileNumber] = useState('');
-    const [locationInput, setLocationInput] = useState('');
-    const [otp, setOtp] = useState('');
-    const [otpSent, setOtpSent] = useState(false);
-    const [verified, setVerified] = useState(false);
+function SpinPage() {
+    const params = useParams();
+    const code = params.randomCode;
+    const hash = params.hashkey;
 
-    const [termsAccepted, setTermsAccepted] = useState(false);
-    const [loading, setLoading] = useState(false);
 
-    const handleSendOTP = async () => {
-        try {
-            setLoading(true);
-            const response = await axios.post('http://localhost:5000/api/user/send-otp', { mobile_number: mobileNumber });
+    const [prizes, setPrizes] = useState([]);
+    const [spinResult, setSpinResult] = useState('');
+    const [spinning, setSpinning] = useState(false);
+    const [startSpin, setStartSpin] = useState(false);
+    const [prizeIndex, setPrizeIndex] = useState(null);
 
-            console.log(mobileNumber)
-            if (response.status === 200) {
-                setOtpSent(true);
-                alert('OTP sent successfully');
-            } else {
-                alert('Error sending OTP');
-            }
-        } catch (error) {
-            console.error(error);
-            alert('Error sending OTP');
-        } finally {
-            setLoading(false);
-        }
-    };
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
 
-    const handleVerifyOTP = async () => {
-        try {
-            setLoading(true);
-            const response = await axios.post('http://localhost:5000/api/user/verify-otp', { mobile_number: mobileNumber, otp });
-            if (response.status === 200) {
-                setVerified(true);
-                alert('Mobile number verified successfully');
-            } else {
-                alert('Invalid OTP');
-            }
-        } catch (error) {
-            console.error(error);
-            alert('Error verifying OTP');
-        } finally {
-            setLoading(false);
-        }
-    };
+                const prizesResponse = await axios.get('http://localhost:5000/api/user/codes');
+                const prizesData = prizesResponse.data.map(item => item.prize);
+                setPrizes(prizesData);
+                console.log("Prizes Data:", prizesData);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            setLoading(true);
-            if (otpSent && verified) {
-                console.log(name, mobileNumber, locationInput, code, hash)
-                const response = await axios.post('http://localhost:5000/api/user/fill-form', { name, mobile_number: mobileNumber, location: locationInput, random_code: code, hash_key: hash });
-                if (response.status === 200) {
-                    alert('Prize redeemed successfully');
-                    localStorage.setItem('token', response.data.token);
-                    navigate('/profile');
+
+                const spinResponse = await axios.post('http://localhost:5000/api/user/spin-to-win', { random_code: code, hash_key: hash });
+                console.log("Spin Response Data:", spinResponse.data);
+                const prize = spinResponse.data.prize;
+
+
+                const prizeIndex = prizesData.indexOf(prize);
+                if (prizeIndex !== -1) {
+                    setPrizeIndex(prizeIndex);
                 } else {
-                    alert('Error redeeming prize');
+                    console.error('Prize not found in the prize list.');
                 }
-            } else {
-                alert('Please send and verify OTP before submitting the form');
+            } catch (error) {
+                console.error('Error fetching data:', error);
             }
-        } catch (error) {
-            console.error(error);
-            alert('Error redeeming prize');
-        } finally {
-            setLoading(false);
-        }
-    };
+        };
 
+        fetchData();
+    }, [code, hash]);
+
+    const handleSpin = () => {
+        if (prizeIndex === null || prizeIndex === -1) {
+            console.error('Cannot spin, prize index is invalid.');
+            return;
+        }
+
+        setSpinning(true);
+        setStartSpin(true);
+
+
+        setTimeout(() => {
+            setStartSpin(false);
+            setSpinResult(prizes[prizeIndex]);
+            setSpinning(false);
+        }, 5000);
+    };
 
     return (
-        <div className="form-container">
-            <h1 className="form-title">Redeem Prize</h1>
-            <form onSubmit={verified ? handleSubmit : handleSubmit} className="form">
-                <input
-                    type="text"
-                    placeholder="Name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    disabled={verified}
-                    className="input-field"
-                />
-                <input
-                    type="text"
-                    placeholder="Mobile Number"
-                    value={mobileNumber}
-                    onChange={(e) => setMobileNumber(e.target.value)}
-                    required
-                    disabled={verified}
-                    className="input-field"
-                />
-                <input
-                    type="text"
-                    placeholder="Location"
-                    value={locationInput}
-                    onChange={(e) => setLocationInput(e.target.value)}
-                    required
-                    className="input-field"
-                />
-                {otpSent && !verified && (
-                    <div className="otp-verification">
-                        <input
-                            type="text"
-                            placeholder="Enter OTP"
-                            value={otp}
-                            onChange={(e) => setOtp(e.target.value)}
-                            required
-                            className="input-field otp-input"
-                        />
-                        <button className="verify-otp-btn" onClick={handleVerifyOTP}>Verify OTP</button>
-                    </div>
-                )}
-                <div className="terms-condition">
-                    <input
-                        type="checkbox"
-                        checked={termsAccepted}
-                        onChange={(e) => setTermsAccepted(e.target.checked)}
-                        className="terms-checkbox"
+        <div className="spin-page-container">
+            <h1 className="spin-page-title">Spin to Win</h1>
+            <div className="wheel-container">
+                {prizes.length > 0 && prizeIndex !== null ? (
+                    <Wheel
+                        mustStartSpinning={startSpin}
+                        prizeNumber={prizeIndex}
+                        data={prizes.map(prize => ({ option: prize }))}
+                        backgroundColors={['#3e3e3e', '#df3428']}
+                        textColors={['#ffffff']}
+                        onStopSpinning={() => setStartSpin(false)}
                     />
-                    <label className="terms-label">I accept the terms and conditions</label>
-                </div>
-                {!otpSent && !verified && (
-                    <button className="send-otp-btn" onClick={handleSendOTP}>Send OTP</button>
+                ) : (
+                    <p>Loading prizes...</p>
                 )}
-                <button type="submit" className="submit-btn" disabled={loading || !verified}>
-                    {loading ? 'Loading...' : (verified ? 'Submit' : 'Verify & Submit')}
+                <button className="spin-button" onClick={handleSpin} disabled={spinning || prizeIndex === null}>
+                    {spinning ? 'Spinning...' : 'Spin'}
                 </button>
-            </form>
+            </div>
+            {spinResult && (
+                <div className="result-container">
+                    <p>Congratulations! You won {spinResult}</p>
+                    <Link to={`/fill-form?code=${code}&hash=${hash}`}><button className="redeem-button">Click here to redeem</button></Link>
+                </div>
+            )}
         </div>
     );
 }
 
-export default FormPage;
+export default SpinPage;

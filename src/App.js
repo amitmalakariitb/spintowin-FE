@@ -12,7 +12,7 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/upload" element={<UploadQRPage />} />
-        <Route path="/spin/:randomCode/:hashKey" element={<SpinPage />} />
+        <Route path="/spin/:randomCode/:hashkey" element={<SpinPage />} />
         <Route path="/fill-form" element={<FillFormPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Routes>

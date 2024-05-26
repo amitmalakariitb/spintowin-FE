@@ -1,12 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import './HomePage.css';
 
 function HomePage() {
     return (
-        <div>
-            <h1>Welcome to the QR Code App</h1>
+        <div className="home-container">
+            <h1 className="home-title">Welcome to the QR Code App</h1>
             <Link to="/upload">
-                <button>Upload QR</button>
+                <button className="home-button">Upload QR</button>
             </Link>
         </div>
     );

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import jsQR from 'jsqr';
+import './UploadQRPage.css';
 
 const UploadQRPage = () => {
     const [qrData, setQrData] = useState(null);
@@ -60,10 +61,12 @@ const UploadQRPage = () => {
     };
 
     return (
-        <div>
-            <h1>Upload QR Code</h1>
-            <input type="file" accept="image/*" onChange={handleFileUpload} />
-            {qrData && <p>Redirecting to Spin Page...</p>}
+        <div className="upload-container">
+            <h1 className="upload-title">Upload QR Code</h1>
+            <div className="file-input">
+                <input type="file" accept="image/*" onChange={handleFileUpload} />
+            </div>
+            {qrData && <p className="redirect-message">Redirecting to Spin Page...</p>}
         </div>
     );
 };
